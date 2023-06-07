@@ -9,7 +9,7 @@ app.use(cors())
 app.use(express.json());
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.SECRET_NAME}:${process.env.SECRET_PASS}@cluster0.gmvhoig.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -27,11 +27,32 @@ async function run() {
         // await client.connect();
 
         const instractorCollection = client.db('sportCamp').collection('instractor')
+        const classCollection = client.db('sportCamp').collection('classes')
         const studentCollection = client.db('sportCamp').collection('student')
         const cartsCollection = client.db('sportCamp').collection('cart')
 
         app.get('/ins', async (req, res) => {
             const result = await instractorCollection.find().toArray();
+            res.send(result)
+        });
+
+        app.post('/classes', async(req,res)=>{
+
+        })
+
+        app.get('/classes', async(req, res)=>{
+            const result = await classCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.post('/student', async(req, res)=>{
+            const newItem = req.body;
+            const result =await studentCollection.insertOne(newItem);
+            res.send(result)
+        })
+
+        app.get('/student', async(req,res)=>{
+            const result = await studentCollection.find().toArray();
             res.send(result)
         })
         // Send a ping to confirm a successful connection
