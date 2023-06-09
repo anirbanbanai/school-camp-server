@@ -20,7 +20,7 @@ const veryfyJWT = (req, res, next) => {
         if (err) {
             return res.status(403).send({ error: "Unauthorize access!" })
         }
-        console.log(decoded);
+        // console.log(decoded);
         req.decoded = decoded;
         next()
 
@@ -46,6 +46,7 @@ async function run() {
 
         const instractorCollection = client.db('sportCamp').collection('instractor')
         const classCollection = client.db('sportCamp').collection('classes')
+        const selectedClassCollection = client.db('sportCamp').collection('selectedClasses')
         const usersCollection = client.db('sportCamp').collection('users')
         const cartsCollection = client.db('sportCamp').collection('cart')
 
@@ -58,20 +59,39 @@ async function run() {
             res.send({ token })
         })
 
-
+        app.post('/selectedClass', async (req, res) => {
+            const newItems = req.body;
+            const result = await selectedClassCollection.insertOne(newItems);
+            res.send(result)
+        })
 
         app.get('/ins', async (req, res) => {
             const result = await instractorCollection.find().toArray();
             res.send(result)
         });
 
+        app.post('/ins', async(req, res)=>{
+            const all = req.body;
+            const result = await instractorCollection.insertOne(all);
+            res.send(result)
+        })
+        
         app.post('/classes', async (req, res) => {
-
+            const all = req.body;
+            const result = await classCollection.insertOne(all);
+            res.send(result)
         })
 
-        app.get('/classes',veryfyJWT, async (req, res) => {
+        app.get('/classes', async (req, res) => {
             const result = await classCollection.find().toArray();
             res.send(result);
+        })
+
+        app.get('/classes/:id', async(req, res)=>{
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const result = await classCollection.find(query).toArray();
+            res.send(result)
         })
 
         app.post('/users', async (req, res) => {
@@ -80,15 +100,22 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/users/admin/:email', async (req, res) => {
+        app.get('/users/admin/:email', veryfyJWT, async (req, res) => {
             const email = req.params.email;
+            // console.log(email);
+            if (req.decoded.email !== email) {
+                return res.send({ admin: false })
+            }
             const query = { email: email };
             const user = await usersCollection.findOne(query);
             const result = { admin: user?.role === 'admin' };
-            res.send(result)
+            return res.send(result)
         })
-        app.get('/users/ins/:email', async (req, res) => {
+        app.get('/users/ins/:email', veryfyJWT, async (req, res) => {
             const email = req.params.email;
+            if (req.decoded.email !== email) {
+                return res.send({ instractor: false })
+            }
             const query = { email: email };
             const user = await usersCollection.findOne(query);
             const result = { instractor: user?.role === 'instractor' };
