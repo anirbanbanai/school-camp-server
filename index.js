@@ -83,6 +83,10 @@ async function run() {
         })
 
         app.get('/classes', async (req, res) => {
+            const result = await classCollection.find().toArray();
+            res.send(result);
+        })
+        app.get('/classesE', async (req, res) => {
             const email = req.query.email;
             const result = await classCollection.find({email: email}).toArray();
             res.send(result);
