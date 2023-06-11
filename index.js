@@ -129,7 +129,9 @@ async function run() {
         app.post('/enrolClass', async (req, res) => {
             const newItems = req.body;
             const result = await enrolClassCollection.insertOne(newItems);
-            res.send(result)
+            const query = {_id: {$in : newItems.itemId.map(id=> new ObjectId(id))}};
+            const deleteResult  = await selectedClassCollection.deleteMany(query)
+            res.send({result, deleteResult})
         })
 
         app.get('/enrolClass', async (req, res) => {
