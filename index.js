@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const cors = require("cors");
 require('dotenv').config();
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY)
 
 // middlewere
 app.use(cors())
@@ -47,8 +48,9 @@ async function run() {
         const instractorCollection = client.db('sportCamp').collection('instractor')
         const classCollection = client.db('sportCamp').collection('classes')
         const selectedClassCollection = client.db('sportCamp').collection('selectedClasses')
+        const enrolClassCollection = client.db('sportCamp').collection('enrolClasses')
         const usersCollection = client.db('sportCamp').collection('users')
-        const cartsCollection = client.db('sportCamp').collection('cart')
+        const aproveClassCollection = client.db('sportCamp').collection('aproveClass')
 
 
         app.post('/jwt', async (req, res) => {
@@ -59,23 +61,103 @@ async function run() {
             res.send({ token })
         })
 
+        app.post('/create-payment-intent', async(req, res)=>{
+            const {price} = req.body;
+            const amount = Math.round(parseInt(price * 100));
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            })
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        })
+    // secected class && enrol Class section
+
+
+    app.get('/approveClass', async(req, res)=>{
+        const result = await aproveClassCollection.find().toArray();
+        res.send(result)
+    })
+
+    app.post('/aproveClass', async(req, res)=>{
+        const all = req.body;
+        const result = await aproveClassCollection.insertOne(all);
+        res.send(result)
+    })
+
+    app.patch('/aproveClass/aprove/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updateItem = {
+            $set: {
+               role: "aprove"
+            }
+        }
+        const result = await classCollection.updateOne(query, updateItem);
+        res.send(result)
+    })
+
+        app.get('/selectedClasses', async (req, res) => {
+            const result = await selectedClassCollection.find().toArray();
+            res.send(result)
+        })
+        app.get('/selectedmyClass', async (req, res) => {
+            const email = req.query.email;
+            const result = await selectedClassCollection.find({ email: email }).toArray();
+            res.send(result)
+        })
+
+        app.patch('/selectedClass/enrol/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const updateItem = {
+                $set: {
+                    role: 'enrol'
+                }
+            }
+            const result = await selectedClassCollection.updateOne(query, updateItem);
+            res.send(result)
+        })
+
         app.post('/selectedClass', async (req, res) => {
             const newItems = req.body;
             const result = await selectedClassCollection.insertOne(newItems);
             res.send(result)
         })
+        app.post('/enrolClass', async (req, res) => {
+            const newItems = req.body;
+            const result = await enrolClassCollection.insertOne(newItems);
+            res.send(result)
+        })
+
+        app.get('/enrolClass', async (req, res) => {
+            const result = await enrolClassCollection.find().toArray();
+            res.send(result)
+        })
+
+        app.get('/enrolClassE', async (req, res) => {
+            const email = req.query.email;
+            const result = await enrolClassCollection.find({ email: email }).toArray();
+            res.send(result)
+        })
+
+        // instructor section
 
         app.get('/ins', async (req, res) => {
             const result = await instractorCollection.find().toArray();
             res.send(result)
         });
 
-        app.post('/ins', async(req, res)=>{
+        app.post('/ins', async (req, res) => {
             const all = req.body;
             const result = await instractorCollection.insertOne(all);
             res.send(result)
         })
-        
+
+        // class section
+
         app.post('/classes', async (req, res) => {
             const all = req.body;
             const result = await classCollection.insertOne(all);
@@ -88,16 +170,42 @@ async function run() {
         })
         app.get('/classesE', async (req, res) => {
             const email = req.query.email;
-            const result = await classCollection.find({email: email}).toArray();
+            const result = await classCollection.find({ email: email }).toArray();
             res.send(result);
         })
 
-        app.get('/classes/:id', async(req, res)=>{
+        app.get('/classes/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await classCollection.find(query).toArray();
             res.send(result)
         })
+
+        app.patch('/classUpdate/:id', async (req, res) => {
+            const id = req.params.id;
+            const user = req.body;
+            const query = { _id: new ObjectId(id) }
+            const updateItem = {
+                $set: {
+                    name: user.name,
+                    price: user.price,
+                    available_seats: user.available_seats,
+                    img: user.img,
+                    details: user.details
+                }
+            };
+            const result = await classCollection.updateOne(query, updateItem);
+            res.send(result)
+        })
+
+        app.delete('/classes/:id', async(req, res)=>{
+            const id  = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const result = await classCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        // user section
 
         app.post('/users', async (req, res) => {
             const newItem = req.body;
