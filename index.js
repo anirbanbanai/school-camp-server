@@ -228,7 +228,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/classes',veryfyJWT, async (req, res) => {
+        app.get('/classes',veryfyJWT,verifyAdmin, async (req, res) => {
             const result = await classCollection.find().toArray();
             res.send(result);
         })
