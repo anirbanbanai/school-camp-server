@@ -51,6 +51,7 @@ async function run() {
         const enrolClassCollection = client.db('sportCamp').collection('enrolClasses')
         const usersCollection = client.db('sportCamp').collection('users')
         const aproveClassCollection = client.db('sportCamp').collection('aproveClass')
+        const PaymentHisClassCollection = client.db('sportCamp').collection('PaymentHistory')
 
 
         app.post('/jwt', async (req, res) => {
@@ -61,8 +62,28 @@ async function run() {
             res.send({ token })
         })
 
+        const verifyAdmin = async(req, res, next)=>{
+            const email = req.decoded.email;
+            const query = {email: email};
+            const user = await usersCollection.findOne(query);
+            if(user?.role !== 'admin'){
+                return res.status(403).send({error : true, message: "forbiden access-"})
+            }
+            next()
+        }
+        const verifyInstructor = async(req, res, next)=>{
+            const email = req.decoded.email;
+            const query = {email: email};
+            const user = await usersCollection.findOne(query);
+            if(user?.role !== 'instractor'){
+                return res.status(403).send({error : true, message: "forbiden access-"})
+            }
+            next()
+        }
+
         app.post('/create-payment-intent', async(req, res)=>{
             const {price} = req.body;
+            console.log(req.body);
             const amount = Math.round(parseInt(price * 100));
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
@@ -73,6 +94,17 @@ async function run() {
                 clientSecret: paymentIntent.client_secret
             })
         })
+
+        app.get('/paymentHistory',veryfyJWT, async(req, res)=>{
+            const result = await PaymentHisClassCollection.find().toArray();
+            res.send(result)
+        })
+        app.get('/paymentmyHistory',veryfyJWT, async(req, res)=>{
+            const email = req.query.email
+            const result = await PaymentHisClassCollection.find({email: email}).toArray();
+            res.send(result)
+        })
+
     // secected class && enrol Class section
 
 
@@ -84,6 +116,11 @@ async function run() {
     app.post('/aproveClass', async(req, res)=>{
         const all = req.body;
         const result = await aproveClassCollection.insertOne(all);
+        res.send(result)
+    })
+    app.post('/paymentHistory',veryfyJWT, async(req, res)=>{
+        const all = req.body;
+        const result = await PaymentHisClassCollection.insertOne(all);
         res.send(result)
     })
 
@@ -114,7 +151,7 @@ async function run() {
             const result = await selectedClassCollection.find().toArray();
             res.send(result)
         })
-        app.get('/selectedmyClass', async (req, res) => {
+        app.get('/selectedmyClass',veryfyJWT, async (req, res) => {
             const email = req.query.email;
             const result = await selectedClassCollection.find({ email: email }).toArray();
             res.send(result)
@@ -136,6 +173,7 @@ async function run() {
         //     const body = req.body;
         //     const id = req.params.id;
         //     const query = { _id: id };
+
         //     const updateItem = {
         //         $set: {
         //             available_seats: body.available_seats + 1
@@ -150,7 +188,7 @@ async function run() {
             const result = await selectedClassCollection.insertOne(newItems);
             res.send(result)
         })
-        app.post('/enrolClass', async (req, res) => {
+        app.post('/enrolClass',veryfyJWT, async (req, res) => {
             const newItems = req.body;
             const result = await enrolClassCollection.insertOne(newItems);
             const query = {_id: {$in : newItems.itemId.map(id=> new ObjectId(id))}};
@@ -163,7 +201,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/enrolClassE', async (req, res) => {
+        app.get('/enrolClassE',veryfyJWT, async (req, res) => {
             const email = req.query.email;
             const result = await enrolClassCollection.find({ email: email }).toArray();
             res.send(result)
@@ -171,7 +209,7 @@ async function run() {
 
         // instructor section
 
-        app.get('/ins', async (req, res) => {
+        app.get('/ins',async (req, res) => {
             const result = await instractorCollection.find().toArray();
             res.send(result)
         });
@@ -184,17 +222,17 @@ async function run() {
 
         // class section
 
-        app.post('/classes', async (req, res) => {
+        app.post('/classes',veryfyJWT,verifyAdmin, async (req, res) => {
             const all = req.body;
             const result = await classCollection.insertOne(all);
             res.send(result)
         })
 
-        app.get('/classes', async (req, res) => {
+        app.get('/classes',veryfyJWT,verifyAdmin, async (req, res) => {
             const result = await classCollection.find().toArray();
             res.send(result);
         })
-        app.get('/classesE', async (req, res) => {
+        app.get('/classesE',veryfyJWT,verifyInstructor, async (req, res) => {
             const email = req.query.email;
             const result = await classCollection.find({ email: email }).toArray();
             res.send(result);
@@ -304,7 +342,7 @@ async function run() {
         //     res.send(result)
         // })
 
-        app.get('/users', async (req, res) => {
+        app.get('/users',veryfyJWT,verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result)
         })
