@@ -188,7 +188,7 @@ async function run() {
             const result = await selectedClassCollection.insertOne(newItems);
             res.send(result)
         })
-        app.post('/enrolClass',veryfyJWT, async (req, res) => {
+        app.post('/enrolClass', async (req, res) => {
             const newItems = req.body;
             const result = await enrolClassCollection.insertOne(newItems);
             const query = {_id: {$in : newItems.itemId.map(id=> new ObjectId(id))}};
@@ -222,13 +222,13 @@ async function run() {
 
         // class section
 
-        app.post('/classes',veryfyJWT,verifyAdmin, async (req, res) => {
+        app.post('/classes', async (req, res) => {
             const all = req.body;
             const result = await classCollection.insertOne(all);
             res.send(result)
         })
 
-        app.get('/classes',veryfyJWT,verifyAdmin, async (req, res) => {
+        app.get('/classes',veryfyJWT, async (req, res) => {
             const result = await classCollection.find().toArray();
             res.send(result);
         })
