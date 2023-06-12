@@ -98,6 +98,17 @@ async function run() {
         const result = await classCollection.updateOne(query, updateItem);
         res.send(result)
     })
+    app.patch('/aproveClass/deny/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updateItem = {
+            $set: {
+               role: "deny"
+            }
+        }
+        const result = await classCollection.updateOne(query, updateItem);
+        res.send(result)
+    })
 
         app.get('/selectedClasses', async (req, res) => {
             const result = await selectedClassCollection.find().toArray();
@@ -121,6 +132,19 @@ async function run() {
             res.send(result)
         })
 
+        // app.patch('/Class/seatupdate/:id', async (req, res) => {
+        //     const body = req.body;
+        //     const id = req.params.id;
+        //     const query = { _id: id };
+        //     const updateItem = {
+        //         $set: {
+        //             available_seats: body.available_seats + 1
+        //         }
+        //     }
+        //     const result = await aproveClassCollection.updateOne(query, updateItem);
+        //     res.send(result)
+        // })
+
         app.post('/selectedClass', async (req, res) => {
             const newItems = req.body;
             const result = await selectedClassCollection.insertOne(newItems);
@@ -134,7 +158,7 @@ async function run() {
             res.send({result, deleteResult})
         })
 
-        app.get('/enrolClass', async (req, res) => {
+        app.get('/enrolClass',async (req, res) => {
             const result = await enrolClassCollection.find().toArray();
             res.send(result)
         })
